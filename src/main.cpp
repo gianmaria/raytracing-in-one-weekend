@@ -14,6 +14,7 @@
 #include "shpere.h"
 #include "rtweekend.h"
 #include "camera.h"
+#include "material.h"
 
 #if 0
 int main1(void)
@@ -48,7 +49,7 @@ int main1(void)
 
 struct World
 {
-    Sphere spheres[2];
+    Sphere spheres[4];
 };
 
 void write_color(FILE* fp, Color pixel_color, int samples_per_pixel)
@@ -105,18 +106,41 @@ Color ray_color(Ray* ray, World* world, int depth)
 
     if (ray_hit_object_in_world(ray, world, &rec))
     {
-        Point3 target = rec.point + random_in_hemisphere(rec.normal);
-        
-        Ray new_ray = {};
-        new_ray.origin = rec.point;
-        new_ray.direction = target - rec.point;
+        Ray scattered = {};
+        Color attenuation = {};
 
-        return 0.5f * ray_color(&new_ray, world, depth - 1);
+        bool res = false;
+
+        switch (rec.material->type)
+        {
+            case Material_Type::lambertian:
+            {
+                res = lambertian_scatter(
+                    rec.material,
+                    ray, &rec,
+                    &attenuation,
+                    &scattered);
+            } break;
+            
+            case Material_Type::metal:
+            {
+                res = metal_scatter(
+                    rec.material,
+                    ray, &rec,
+                    &attenuation,
+                    &scattered);
+            } break;
+        }
+        
+        if (res)
+            return attenuation * ray_color(&scattered, world, depth - 1);
+        else
+            return vec3(0.0f, 0.0f, 0.0f);
     }
 
-    Vec3 unit_direction = unit_vec(ray->direction);
+    Vec3 unit_direction = unit_vector(ray->direction);
     float t = 0.5f * (unit_direction.y + 1.0f);
-    return (1.0f - t) * vec3(1.0f) + t * vec3(0.5f, 0.7f, 1.0f);
+    return (1.0f - t) * vec3(1.0f, 1.0f, 1.0f) + t * vec3(0.5f, 0.7f, 1.0f);
 }
 
 
@@ -146,9 +170,20 @@ int main(void)
 
     World world = {};
 
-    world.spheres[0] = sphere(vec3(0.0f, 0.0f, -1.0f), 0.5f);
-    world.spheres[1] = sphere(vec3(0.0f, -100.5f, -1.0f), 100.0f);
+    Material material_ground = material(vec3(0.8f, 0.8f, 0.0f),
+        Material_Type::lambertian);
+    Material material_center = material(vec3(0.7f, 0.3f, 0.3f),
+        Material_Type::lambertian);
 
+    Material material_left = material(vec3(0.8f, 0.8f, 0.8f), 
+        Material_Type::metal);
+    Material material_right = material(vec3(0.8f, 0.6f, 0.2f), 
+        Material_Type::metal);
+
+    world.spheres[0] = sphere(vec3(0.0f, -100.5f, -1.0f), 100.0f, &material_ground);
+    world.spheres[1] = sphere(vec3(0.0f, 0.0f, -1.0f), 0.5f, &material_center);
+    world.spheres[2] = sphere(vec3(-1.0f, 0.0f, -1.0f), 0.5f, &material_left);
+    world.spheres[3] = sphere(vec3(1.0f, 0.0f, -1.0f), 0.5f, &material_right);
 
     // Camera
 
@@ -160,6 +195,7 @@ int main(void)
     fprintf(fp, "%d %d\n", image_width, image_height);
     fprintf(fp, "255\n");
 
+    printf("Begin rendering...\n");
     std::chrono::time_point<std::chrono::steady_clock> start =
         std::chrono::steady_clock::now();
 
@@ -192,7 +228,10 @@ int main(void)
     }
 
     auto end = std::chrono::steady_clock::now();
-    std::cout << "Took: " << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << "ms" << std::endl;
+    std::cout << 
+        "End rendering (" << 
+        std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() <<
+        "ms)" << std::endl;
 
     fclose(fp);
 

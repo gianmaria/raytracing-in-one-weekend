@@ -69,7 +69,7 @@ Vec3 random_vec3(float min, float max)
 
 Vec3 random_unit_vector()
 {
-    return unit_vec(random_in_unit_sphere());
+    return unit_vector(random_in_unit_sphere());
 }
 
 Vec3 random_in_hemisphere(Vec3 normal)
@@ -80,6 +80,21 @@ Vec3 random_in_hemisphere(Vec3 normal)
         return in_unit_sphere;
     else
         return -in_unit_sphere;
+}
+
+bool near_zero(Vec3 v)
+{
+    // Return true if the vector is close to zero in all dimensions.
+    float s = 1e-8f;
+    return 
+        (fabsf(v.x) < s) && 
+        (fabsf(v.y) < s) && 
+        (fabsf(v.z) < s);
+}
+
+Vec3 reflect(Vec3 v, Vec3 n)
+{
+    return v - 2.0f * dot(v, n) * n;
 }
 
 float dot(Vec3 a, Vec3 b)
@@ -103,7 +118,7 @@ Vec3 cross(Vec3 a, Vec3 b)
     return res;
 }
 
-Vec3 unit_vec(Vec3 a)
+Vec3 unit_vector(Vec3 a)
 {
     return a / len(a);
 }

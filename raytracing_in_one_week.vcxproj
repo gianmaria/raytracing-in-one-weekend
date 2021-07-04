@@ -91,6 +91,7 @@
   <ItemGroup>
     <ClCompile Include="src\camera.cpp" />
     <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\material.cpp" />
     <ClCompile Include="src\shpere.cpp" />
     <ClCompile Include="src\vec3.cpp" />
     <ClCompile Include="src\ray.cpp" />
@@ -98,6 +99,7 @@
   <ItemGroup>
     <ClInclude Include="src\camera.h" />
     <ClInclude Include="src\hittable.h" />
+    <ClInclude Include="src\material.h" />
     <ClInclude Include="src\rtweekend.h" />
     <ClInclude Include="src\shpere.h" />
     <ClInclude Include="src\vec3.h" />

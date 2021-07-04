@@ -30,16 +30,18 @@ bool ray_hit_sphere(Sphere* sphere,
     rec->normal = (rec->point - sphere->center) / sphere->radius;
     Vec3 outward_normal = (rec->point - sphere->center) / sphere->radius;
     rec->set_face_normal(ray, outward_normal);
+    rec->material = sphere->material;
 
     return true;
 }
 
-Sphere sphere(Point3 center, float radius)
+Sphere sphere(Point3 center, float radius, Material* material)
 {
-    Sphere res = {};
+    Sphere sphere = {};
 
-    res.center = center;
-    res.radius = radius;
+    sphere.center = center;
+    sphere.radius = radius;
+    sphere.material = material;
 
-    return res;
+    return sphere;
 }
