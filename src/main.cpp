@@ -57,9 +57,9 @@ void write_color(FILE* fp, Color pixel_color, int samples_per_pixel)
     // Divide the color by the number of samples.
 
     float scale = 1.0f / (float)samples_per_pixel;
-    r *= scale;
-    g *= scale;
-    b *= scale;
+    r = sqrtf(scale * r);
+    g = sqrtf(scale * g);
+    b = sqrtf(scale * b);
 
     fprintf(fp, "%d %d %d\n",
         (int)(256.0f * clamp(r, 0.0f, 0.999f)), 
@@ -71,7 +71,7 @@ bool ray_hit_object_in_world(Ray* ray, World* world, Hit_Record* rec)
 {
     Hit_Record temp_rec = {};
     bool hit_anything = false;
-    auto closest_so_far = INF;
+    float closest_so_far = INF;
 
     // check spheres
     for (size_t i = 0;
@@ -80,7 +80,7 @@ bool ray_hit_object_in_world(Ray* ray, World* world, Hit_Record* rec)
     {
         Sphere* sphere = &world->spheres[i];
 
-        if (ray_hit_sphere(sphere, ray, 0, closest_so_far, &temp_rec))
+        if (ray_hit_sphere(sphere, ray, 0.001f, closest_so_far, &temp_rec))
         {
             hit_anything = true;
             closest_so_far = temp_rec.t;
@@ -129,9 +129,16 @@ int main(void)
     float aspect_ratio = 16.0f / 9.0f;
     int image_width = 400;
     int image_height = (int)((float)image_width / aspect_ratio);
-    int samples_per_pixel = 50;
-    int max_depth = 25;
+    int samples_per_pixel = 100;
+    int max_depth = 50;
     
+#define GOTTA_GO_FAST 0
+
+#if GOTTA_GO_FAST
+    samples_per_pixel = 50;
+    max_depth = 25;
+#endif
+
     // World 
 
     World world = {};

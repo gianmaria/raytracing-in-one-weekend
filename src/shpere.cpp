@@ -18,7 +18,8 @@ bool ray_hit_sphere(Sphere* sphere,
 
     // find the nearest root that lies in the accetable range.
     float root = (-half_b - sqrtd) / a;
-    if (root < t_min || t_max < root) {
+    if (root < t_min || t_max < root) 
+    {
         root = (-half_b + sqrtd) / a;
         if (root < t_min || t_max < root)
             return false;
