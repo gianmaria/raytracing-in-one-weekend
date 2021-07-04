@@ -1,6 +1,7 @@
 #include <math.h>
 
 #include "vec3.h"
+#include "rtweekend.h"
 
 Vec3 vec3()
 {
@@ -32,22 +33,39 @@ Vec3 vec3(float a, float b, float c)
 }
 
 
-float Vec3::len()
+float len(Vec3 v)
 {
-    float res = sqrtf(len_squared());
+    float res = sqrtf(len_squared(v));
 
     return res;
 }
 
-float Vec3::len_squared()
+float len_squared(Vec3 v)
 {
-    float res = x * x +
-        y * y +
-        z * z;
+    float res = 
+        v.x * v.x +
+        v.y * v.y +
+        v.z * v.z;
 
     return res;
 }
 
+
+Vec3 random_vec3()
+{
+    return vec3(
+        random_float(),
+        random_float(),
+        random_float());
+}
+
+Vec3 random_vec3(float min, float max)
+{
+    return vec3(
+        random_float(min, max),
+        random_float(min, max),
+        random_float(min, max));
+}
 
 float dot(Vec3 a, Vec3 b)
 {
@@ -72,7 +90,20 @@ Vec3 cross(Vec3 a, Vec3 b)
 
 Vec3 unit_vec(Vec3 a)
 {
-    return a / a.len();
+    return a / len(a);
+}
+
+Vec3 random_in_unit_sphere()
+{
+    while (true)
+    {
+        Vec3 p = random_vec3(-1.0f, 1.0f);
+
+        if (len_squared(p) >= 1.0f)
+            continue;
+
+        return p;
+    }
 }
 
 

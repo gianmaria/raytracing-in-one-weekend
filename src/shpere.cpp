@@ -6,9 +6,9 @@ bool ray_hit_sphere(Sphere* sphere,
     Ray* ray, float t_min, float t_max, Hit_Record* rec)
 {
     Vec3 oc = ray->origin - sphere->center;
-    float a = ray->direction.len_squared();
+    float a = len_squared(ray->direction);
     float half_b = dot(oc, ray->direction);
-    float c = oc.len_squared() - sphere->radius * sphere->radius;
+    float c = len_squared(oc) - sphere->radius * sphere->radius;
     float discriminant = half_b * half_b - a * c;
 
     if (discriminant < 0.0f)

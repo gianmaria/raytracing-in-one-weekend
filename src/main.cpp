@@ -91,13 +91,24 @@ bool ray_hit_object_in_world(Ray* ray, World* world, Hit_Record* rec)
     return hit_anything;
 }
 
-Color ray_color(Ray* ray, World* world)
+Color ray_color(Ray* ray, World* world, int depth)
 {
     Hit_Record rec = {};
 
+    if (depth <= 0)
+    {
+        return vec3(0.0f);
+    }
+
     if (ray_hit_object_in_world(ray, world, &rec))
     {
-        return 0.5f * (rec.normal + vec3(1.0f, 1.0f, 1.0f));
+        Point3 target = rec.point + rec.normal + random_in_unit_sphere();
+        
+        Ray new_ray = {};
+        new_ray.origin = rec.point;
+        new_ray.direction = target - rec.point;
+
+        return 0.5f * ray_color(&new_ray, world, depth - 1);
     }
 
     Vec3 unit_direction = unit_vec(ray->direction);
@@ -118,8 +129,9 @@ int main(void)
     float aspect_ratio = 16.0f / 9.0f;
     int image_width = 400;
     int image_height = (int)((float)image_width / aspect_ratio);
-    int samples_per_pixel = 100;
-
+    int samples_per_pixel = 50;
+    int max_depth = 25;
+    
     // World 
 
     World world = {};
@@ -159,7 +171,7 @@ int main(void)
             
                 Ray ray = get_ray_from_camera(&cam, u, v);
 
-                pixel_color += ray_color(&ray, &world);
+                pixel_color += ray_color(&ray, &world, max_depth);
             }
             
             write_color(fp, pixel_color, samples_per_pixel);
