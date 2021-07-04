@@ -7,6 +7,10 @@
 
 #include "vec3.h"
 #include "ray.h"
+#include "hittable.h"
+#include "shpere.h"
+#include "rtweekend.h"
+#include "camera.h"
 
 #if 0
 int main1(void)
@@ -39,69 +43,96 @@ int main1(void)
 }
 #endif
 
-void write_color(FILE* fp, Color color)
+struct World
 {
-    int ir = (int)(255.999 * color.r);
-    int ig = (int)(255.999 * color.g);
-    int ib = (int)(255.999 * color.b);
+    Sphere spheres[2];
+};
+
+void write_color(FILE* fp, Color pixel_color, int samples_per_pixel)
+{
+    float r = pixel_color.r;
+    float g = pixel_color.g;
+    float b = pixel_color.b;
+
+    // Divide the color by the number of samples.
+
+    float scale = 1.0f / (float)samples_per_pixel;
+    r *= scale;
+    g *= scale;
+    b *= scale;
 
     fprintf(fp, "%d %d %d\n",
-        ir, ig, ib);
+        (int)(256.0f * clamp(r, 0.0f, 0.999f)), 
+        (int)(256.0f * clamp(g, 0.0f, 0.999f)), 
+        (int)(256.0f * clamp(b, 0.0f, 0.999f)));
 }
 
-float hit_sphere(Point3 center, float radius, Ray r)
+bool ray_hit_object_in_world(Ray* ray, World* world, Hit_Record* rec)
 {
-    Vec3 oc = r.origin - center;
-    float a = dot(r.direction, r.direction);
-    float b = 2.0f * dot(oc, r.direction);
-    float c = dot(oc, oc) - radius * radius;
-    float discriminant = b * b - 4.0f * a * c;
-    
-    if (discriminant < 0.0f)
-        return -1.0f;
-    else
-        return (-b - sqrtf(discriminant) ) / (2.0f * a);
-}
+    Hit_Record temp_rec = {};
+    bool hit_anything = false;
+    auto closest_so_far = INF;
 
-Color ray_color(Ray r)
-{
-    float t = hit_sphere(vec3(0.0f, 0.0f, -1.0f), 0.5f, r);
-
-    if (t > 0.0f)
+    // check spheres
+    for (size_t i = 0;
+        i < ArrayCount(world->spheres);
+        ++i)
     {
-        Vec3 N = unit_vec(r.at(t) - vec3(0.0f, 0.0f, -1.0f));
-        return 0.5f * vec3(N.r + 1.0f, 
-                           N.g + 1.0f, 
-                           N.b + 1.0f);
+        Sphere* sphere = &world->spheres[i];
+
+        if (ray_hit_sphere(sphere, ray, 0, closest_so_far, &temp_rec))
+        {
+            hit_anything = true;
+            closest_so_far = temp_rec.t;
+            *rec = temp_rec;
+        }
     }
 
-    Vec3 unit_direction = unit_vec(r.direction);
-    t = 0.5f * (unit_direction.y + 1.0f);
+    return hit_anything;
+}
+
+Color ray_color(Ray* ray, World* world)
+{
+    Hit_Record rec = {};
+
+    if (ray_hit_object_in_world(ray, world, &rec))
+    {
+        return 0.5f * (rec.normal + vec3(1.0f, 1.0f, 1.0f));
+    }
+
+    Vec3 unit_direction = unit_vec(ray->direction);
+    float t = 0.5f * (unit_direction.y + 1.0f);
     return (1.0f - t) * vec3(1.0f) + t * vec3(0.5f, 0.7f, 1.0f);
 }
 
 
 
+
+
 int main(void)
 {
-
-    hit_sphere(vec3(), 0.0f, ray(vec3(), vec3()));
-
     FILE* fp = fopen("output.ppm", "wb");
+
+    // Image 
 
     float aspect_ratio = 16.0f / 9.0f;
     int image_width = 400;
     int image_height = (int)((float)image_width / aspect_ratio);
+    int samples_per_pixel = 100;
 
-    float viewport_height = 2.0f;
-    float viewport_width = aspect_ratio * viewport_height;
-    float focal_length = 1.0f;
+    // World 
 
-    Point3 origin = vec3(0.0f);
-    Vec3 horizontal = vec3(viewport_width, 0.0f, 0.0f);
-    Vec3 vertical = vec3(0.0f, viewport_height, 0.0f);
-    Vec3 lower_left_corner = origin - horizontal / 2.0f - vertical / 2.0f - vec3(0.0f, 0.0f, focal_length);
+    World world = {};
 
+    world.spheres[0] = sphere(vec3(0.0f, 0.0f, -1.0f), 0.5f);
+    world.spheres[1] = sphere(vec3(0.0f, -100.5f, -1.0f), 100.0f);
+
+
+    // Camera
+
+    Camera cam = default_camera();
+
+    // Render
 
     fprintf(fp, "P3\n");
     fprintf(fp, "%d %d\n", image_width, image_height);
@@ -117,12 +148,21 @@ int main(void)
             col < image_width;
             ++col)
         {
-            float u = (float)col / ((float)image_width - 1.0f);
-            float v = (float)row / ((float)image_height - 1.0f);
+            Color pixel_color = vec3(0.0f);
+
+            for (int s = 0;
+                s < samples_per_pixel;
+                ++s)
+            {
+                float u = ((float)col + random_float()) / ((float)image_width - 1.0f);
+                float v = ((float)row + random_float()) / ((float)image_height - 1.0f);
             
-            Ray r = ray(origin, lower_left_corner + u * horizontal + v * vertical - origin);
-            Color pixel_color = ray_color(r);
-            write_color(fp, pixel_color);
+                Ray ray = get_ray_from_camera(&cam, u, v);
+
+                pixel_color += ray_color(&ray, &world);
+            }
+            
+            write_color(fp, pixel_color, samples_per_pixel);
         }
     }
 

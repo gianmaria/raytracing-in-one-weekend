@@ -32,15 +32,22 @@ Vec3 vec3(float a, float b, float c)
 }
 
 
-float len(Vec3 a)
+float Vec3::len()
 {
-    float res = sqrtf(
-        a.x * a.x +
-        a.y * a.y +
-        a.z * a.z);
+    float res = sqrtf(len_squared());
 
     return res;
 }
+
+float Vec3::len_squared()
+{
+    float res = x * x +
+        y * y +
+        z * z;
+
+    return res;
+}
+
 
 float dot(Vec3 a, Vec3 b)
 {
@@ -65,7 +72,7 @@ Vec3 cross(Vec3 a, Vec3 b)
 
 Vec3 unit_vec(Vec3 a)
 {
-    return a / len(a);
+    return a / a.len();
 }
 
 
