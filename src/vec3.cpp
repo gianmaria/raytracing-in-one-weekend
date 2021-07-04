@@ -67,6 +67,21 @@ Vec3 random_vec3(float min, float max)
         random_float(min, max));
 }
 
+Vec3 random_unit_vector()
+{
+    return unit_vec(random_in_unit_sphere());
+}
+
+Vec3 random_in_hemisphere(Vec3 normal)
+{
+    Vec3 in_unit_sphere = random_in_unit_sphere();
+
+    if (dot(in_unit_sphere, normal) > 0.0f) // in the hemisphere as the normal
+        return in_unit_sphere;
+    else
+        return -in_unit_sphere;
+}
+
 float dot(Vec3 a, Vec3 b)
 {
     float res =

@@ -5,6 +5,9 @@
 #include <assert.h>
 #include <math.h>
 
+#include <iostream>
+#include <chrono>
+
 #include "vec3.h"
 #include "ray.h"
 #include "hittable.h"
@@ -102,7 +105,7 @@ Color ray_color(Ray* ray, World* world, int depth)
 
     if (ray_hit_object_in_world(ray, world, &rec))
     {
-        Point3 target = rec.point + rec.normal + random_in_unit_sphere();
+        Point3 target = rec.point + random_in_hemisphere(rec.normal);
         
         Ray new_ray = {};
         new_ray.origin = rec.point;
@@ -157,6 +160,9 @@ int main(void)
     fprintf(fp, "%d %d\n", image_width, image_height);
     fprintf(fp, "255\n");
 
+    std::chrono::time_point<std::chrono::steady_clock> start =
+        std::chrono::steady_clock::now();
+
     for (int row = image_height - 1;
         row >= 0;
         --row)
@@ -185,6 +191,8 @@ int main(void)
         }
     }
 
+    auto end = std::chrono::steady_clock::now();
+    std::cout << "Took: " << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << "ms" << std::endl;
 
     fclose(fp);
 

@@ -30,6 +30,9 @@ float len_squared(Vec3 v);
 
 Vec3 random_vec3();
 Vec3 random_vec3(float min, float max);
+Vec3 random_unit_vector();
+Vec3 random_in_hemisphere(Vec3 normal);
+
 
 float dot(Vec3 a, Vec3 b);
 Vec3 cross(Vec3 a, Vec3 b);
