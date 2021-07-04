@@ -1,9 +1,14 @@
 #include "ray.h"
 
 
-Ray::Ray(const Point3& origin, const Vec3& dir) :
-    origin(origin), direction(dir)
+Ray ray(Point3 origin, Vec3 dir)
 {
+    Ray res = {};
+
+    res.origin = origin;
+    res.direction = dir;
+
+    return res;
 }
 
 Point3 Ray::at(float t)

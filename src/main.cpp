@@ -48,16 +48,33 @@ void write_color(FILE* fp, Color color)
         ir, ig, ib);
 }
 
+bool hit_sphere(Point3 center, float radius, Ray r)
+{
+    Vec3 oc = r.origin - center;
+    float a = dot(r.direction, r.direction);
+    float b = 2.0f * dot(oc, r.direction);
+    float c = dot(oc, oc) - radius * radius;
+    float discriminant = b * b - 4.0f * a * c;
+    return discriminant > 0.0f;
+}
+
 Color ray_color(const Ray& r)
 {
+    if (hit_sphere(vec3(0.0f, 0.0f, -1.0f), 0.5f, r))
+        return vec3(1.0f, 0.0f, 0.0f);
+
     Vec3 unit_direction = unit(r.direction);
     float t = 0.5f * (unit_direction.y + 1.0f);
     return (1.0f - t) * vec3(1.0f) + t * vec3(0.5f, 0.7f, 1.0f);
 }
 
 
+
 int main(void)
 {
+
+    hit_sphere(vec3(), 0.0f, ray(vec3(), vec3()));
+
     FILE* fp = fopen("output.ppm", "wb");
 
     float aspect_ratio = 16.0f / 9.0f;
@@ -91,7 +108,7 @@ int main(void)
             float u = (float)col / ((float)image_width - 1.0f);
             float v = (float)row / ((float)image_height - 1.0f);
             
-            Ray r(origin, lower_left_corner + u * horizontal + v * vertical - origin);
+            Ray r = ray(origin, lower_left_corner + u * horizontal + v * vertical - origin);
             Color pixel_color = ray_color(r);
             write_color(fp, pixel_color);
         }

@@ -6,10 +6,6 @@ Vec3 vec3()
 {
     Vec3 res = {};
 
-    res.x = 0.0f;
-    res.y = 0.0f;
-    res.z = 0.0f;
-
     return res;
 }
 
@@ -36,7 +32,7 @@ Vec3 vec3(float a, float b, float c)
 }
 
 
-float len(const Vec3& a)
+float len(Vec3 a)
 {
     float res = sqrtf(
         a.x * a.x +
@@ -46,7 +42,7 @@ float len(const Vec3& a)
     return res;
 }
 
-float dot(const Vec3& a, const Vec3& b)
+float dot(Vec3 a, Vec3 b)
 {
     float res =
         a.x * b.x +
@@ -56,7 +52,7 @@ float dot(const Vec3& a, const Vec3& b)
     return res;
 }
 
-Vec3 cross(const Vec3& a, const Vec3& b)
+Vec3 cross(Vec3 a, Vec3 b)
 {
     Vec3 res = {};
 
@@ -67,13 +63,13 @@ Vec3 cross(const Vec3& a, const Vec3& b)
     return res;
 }
 
-Vec3 unit(const Vec3& a)
+Vec3 unit(Vec3 a)
 {
     return a / len(a);
 }
 
 
-Vec3 operator+(const Vec3& a, const Vec3& b)
+Vec3 operator+(Vec3 a, Vec3 b)
 {
     Vec3 res = {};
 
@@ -84,7 +80,7 @@ Vec3 operator+(const Vec3& a, const Vec3& b)
     return res;
 }
 
-Vec3 operator-(const Vec3& a, const Vec3& b)
+Vec3 operator-(Vec3 a, Vec3 b)
 {
     Vec3 res = {};
 
@@ -95,7 +91,7 @@ Vec3 operator-(const Vec3& a, const Vec3& b)
     return res;
 }
 
-Vec3 operator*(const Vec3& a, const Vec3& b)
+Vec3 operator*(Vec3 a, Vec3 b)
 {
     Vec3 res = {};
 
@@ -106,7 +102,7 @@ Vec3 operator*(const Vec3& a, const Vec3& b)
     return res;
 }
 
-Vec3 operator*(const Vec3& a, float val)
+Vec3 operator*(Vec3 a, float val)
 {
     Vec3 res = {};
 
@@ -117,12 +113,12 @@ Vec3 operator*(const Vec3& a, float val)
     return res;
 }
 
-Vec3 operator*(float val, const Vec3& a)
+Vec3 operator*(float val, Vec3 a)
 {
     return a * val;
 }
 
-Vec3 operator/(const Vec3& a, float val)
+Vec3 operator/(Vec3 a, float val)
 {
     Vec3 res = {};
 
@@ -133,7 +129,7 @@ Vec3 operator/(const Vec3& a, float val)
     return res;
 }
 
-Vec3 operator-(const Vec3& a)
+Vec3 operator-(Vec3 a)
 {
     Vec3 res = {};
 
@@ -171,7 +167,7 @@ Vec3& operator/=(Vec3& a, float val)
     return a;
 }
 
-bool operator==(const Vec3& a, const Vec3& b)
+bool operator==(Vec3 a, Vec3 b)
 {
     bool res =
         a.x == b.x &&
