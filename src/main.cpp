@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <math.h>
 
 #include "vec3.h"
 #include "ray.h"
@@ -48,23 +49,34 @@ void write_color(FILE* fp, Color color)
         ir, ig, ib);
 }
 
-bool hit_sphere(Point3 center, float radius, Ray r)
+float hit_sphere(Point3 center, float radius, Ray r)
 {
     Vec3 oc = r.origin - center;
     float a = dot(r.direction, r.direction);
     float b = 2.0f * dot(oc, r.direction);
     float c = dot(oc, oc) - radius * radius;
     float discriminant = b * b - 4.0f * a * c;
-    return discriminant > 0.0f;
+    
+    if (discriminant < 0.0f)
+        return -1.0f;
+    else
+        return (-b - sqrtf(discriminant) ) / (2.0f * a);
 }
 
-Color ray_color(const Ray& r)
+Color ray_color(Ray r)
 {
-    if (hit_sphere(vec3(0.0f, 0.0f, -1.0f), 0.5f, r))
-        return vec3(1.0f, 0.0f, 0.0f);
+    float t = hit_sphere(vec3(0.0f, 0.0f, -1.0f), 0.5f, r);
 
-    Vec3 unit_direction = unit(r.direction);
-    float t = 0.5f * (unit_direction.y + 1.0f);
+    if (t > 0.0f)
+    {
+        Vec3 N = unit_vec(r.at(t) - vec3(0.0f, 0.0f, -1.0f));
+        return 0.5f * vec3(N.r + 1.0f, 
+                           N.g + 1.0f, 
+                           N.b + 1.0f);
+    }
+
+    Vec3 unit_direction = unit_vec(r.direction);
+    t = 0.5f * (unit_direction.y + 1.0f);
     return (1.0f - t) * vec3(1.0f) + t * vec3(0.5f, 0.7f, 1.0f);
 }
 

@@ -63,7 +63,7 @@ Vec3 cross(Vec3 a, Vec3 b)
     return res;
 }
 
-Vec3 unit(Vec3 a)
+Vec3 unit_vec(Vec3 a)
 {
     return a / len(a);
 }
