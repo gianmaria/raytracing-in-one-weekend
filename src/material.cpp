@@ -3,12 +3,13 @@
 #include "hittable.h"
 #include "vec3.h"
 
-Material material(Color color, Material_Type type)
+Material material(Color color, Material_Type type, float fuzz)
 {
     Material material = {};
 
     material.color = color;
     material.type = type;
+    material.fuzz = fuzz;
 
     return material;
 }
@@ -38,7 +39,7 @@ bool metal_scatter(
     Color* attenuation, Ray* scattered)
 {
     Vec3 reflected = reflect(unit_vector(r_in->direction), rec->normal);
-    *scattered = ray(rec->point, reflected);
+    *scattered = ray(rec->point, reflected + material->fuzz * random_in_unit_sphere());
     *attenuation = material->color;
 
     return (dot(scattered->direction, rec->normal) > 0.0f);

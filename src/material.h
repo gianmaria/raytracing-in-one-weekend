@@ -13,10 +13,11 @@ enum class Material_Type : unsigned
 struct Material
 {
     Color color;
+    float fuzz;
     Material_Type type;
 };
 
-Material material(Color color, Material_Type type);
+Material material(Color color, Material_Type type, float fuzz);
 
 bool lambertian_scatter(
     Material* material,

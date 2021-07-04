@@ -8,6 +8,10 @@
 #include <iostream>
 #include <chrono>
 
+namespace chrono = std::chrono;
+using std::cout;
+using std::endl;
+
 #include "vec3.h"
 #include "ray.h"
 #include "hittable.h"
@@ -154,7 +158,7 @@ int main(void)
     // Image 
 
     float aspect_ratio = 16.0f / 9.0f;
-    int image_width = 400;
+    int image_width = 480; // 1920 * 2;
     int image_height = (int)((float)image_width / aspect_ratio);
     int samples_per_pixel = 100;
     int max_depth = 50;
@@ -171,14 +175,14 @@ int main(void)
     World world = {};
 
     Material material_ground = material(vec3(0.8f, 0.8f, 0.0f),
-        Material_Type::lambertian);
+        Material_Type::lambertian, 0.0f);
     Material material_center = material(vec3(0.7f, 0.3f, 0.3f),
-        Material_Type::lambertian);
+        Material_Type::lambertian, 0.0f);
 
     Material material_left = material(vec3(0.8f, 0.8f, 0.8f), 
-        Material_Type::metal);
+        Material_Type::metal, 0.3f);
     Material material_right = material(vec3(0.8f, 0.6f, 0.2f), 
-        Material_Type::metal);
+        Material_Type::metal, 1.0f);
 
     world.spheres[0] = sphere(vec3(0.0f, -100.5f, -1.0f), 100.0f, &material_ground);
     world.spheres[1] = sphere(vec3(0.0f, 0.0f, -1.0f), 0.5f, &material_center);
@@ -195,9 +199,8 @@ int main(void)
     fprintf(fp, "%d %d\n", image_width, image_height);
     fprintf(fp, "255\n");
 
-    printf("Begin rendering...\n");
-    std::chrono::time_point<std::chrono::steady_clock> start =
-        std::chrono::steady_clock::now();
+    printf("Begin rendering... ");
+    chrono::time_point<chrono::steady_clock> start = chrono::steady_clock::now();
 
     for (int row = image_height - 1;
         row >= 0;
@@ -227,11 +230,9 @@ int main(void)
         }
     }
 
-    auto end = std::chrono::steady_clock::now();
-    std::cout << 
-        "End rendering (" << 
-        std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() <<
-        "ms)" << std::endl;
+    auto end = chrono::steady_clock::now();
+    auto total_time = chrono::duration_cast<chrono::milliseconds>(end - start).count();
+    cout << "Done! (" << total_time <<"ms)" << endl;
 
     fclose(fp);
 
