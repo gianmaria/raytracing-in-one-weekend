@@ -12,7 +12,7 @@ struct Hit_Record
     bool front_face;
     Material* material;
 
-    inline void set_face_normal(Ray* ray, Vec3 outward_normal)
+    inline void set_face_normal(const Ray* ray, Vec3 outward_normal)
     {
         front_face = dot(ray->direction, outward_normal) < 0.0f;
         normal = front_face ? outward_normal : -outward_normal;

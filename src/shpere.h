@@ -14,5 +14,5 @@ struct Sphere
 
 Sphere sphere(Point3 center, float radius, Material* material);
 
-bool ray_hit_sphere(Sphere* sphere, 
-    Ray* ray, float t_min, float t_max, Hit_Record* rec);
+bool ray_hit_sphere(const Sphere* sphere, 
+    const Ray* ray, float t_min, float t_max, Hit_Record* rec);

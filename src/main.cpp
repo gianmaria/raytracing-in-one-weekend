@@ -75,7 +75,10 @@ void write_color(FILE* fp, Color pixel_color, int samples_per_pixel)
         (int)(256.0f * clamp(b, 0.0f, 0.999f)));
 }
 
-bool ray_hit_object_in_world(Ray* ray, World* world, Hit_Record* rec)
+bool ray_hit_object_in_world(
+    const Ray* ray, 
+    const World* world, 
+    Hit_Record* rec)
 {
     Hit_Record temp_rec = {};
     bool hit_anything = false;
@@ -86,7 +89,7 @@ bool ray_hit_object_in_world(Ray* ray, World* world, Hit_Record* rec)
         i < ArrayCount(world->spheres);
         ++i)
     {
-        Sphere* sphere = &world->spheres[i];
+        const Sphere* sphere = &world->spheres[i];
 
         if (ray_hit_sphere(sphere, ray, 0.001f, closest_so_far, &temp_rec))
         {
@@ -99,7 +102,10 @@ bool ray_hit_object_in_world(Ray* ray, World* world, Hit_Record* rec)
     return hit_anything;
 }
 
-Color ray_color(Ray* ray, World* world, int depth)
+Color ray_color(
+    const Ray* ray, 
+    const World* world, 
+    int depth)
 {
     Hit_Record rec = {};
 
@@ -113,37 +119,7 @@ Color ray_color(Ray* ray, World* world, int depth)
         Ray scattered = {};
         Color attenuation = {};
 
-        bool res = false;
-
-        switch (rec.material->type)
-        {
-            case Material_Type::lambertian:
-            {
-                res = lambertian_scatter(
-                    rec.material,
-                    ray, &rec,
-                    &attenuation,
-                    &scattered);
-            } break;
-            
-            case Material_Type::metal:
-            {
-                res = metal_scatter(
-                    rec.material,
-                    ray, &rec,
-                    &attenuation,
-                    &scattered);
-            } break;
-
-            case Material_Type::dielectric:
-            {
-                res = dielectric_scatter(
-                    rec.material,
-                    ray, &rec,
-                    &attenuation,
-                    &scattered);
-            } break;
-        }
+        bool res = scatter(rec.material, ray, &rec, &attenuation, &scattered);
         
         if (res)
             return attenuation * ray_color(&scattered, world, depth - 1);
@@ -183,17 +159,22 @@ int main(void)
 
     World world = {};
 
-    Material material_ground = material(vec3(0.8f, 0.8f, 0.0f),
-        Material_Type::lambertian, 0.0f, 0.0f);
+    Material material_ground = {};
+    material_ground.type = Material_Type::lambertian;
+    material_ground.lambertian.color = color(0.8f, 0.8f, 0.0f);
 
-    Material material_center = material(vec3(0.7f, 0.3f, 0.3f),
-        Material_Type::dielectric, 0.0f, 1.5);
+    Material material_center = {};
+    material_center.type = Material_Type::dielectric;
+    material_center.dielectric.ir = 1.5f;
 
-    Material material_left = material(vec3(0.8f, 0.8f, 0.8f), 
-        Material_Type::dielectric, 0.3f, 1.5f);
+    Material material_left = {};
+    material_left.type = Material_Type::dielectric;
+    material_left.dielectric.ir = 1.5f;
     
-    Material material_right = material(vec3(0.8f, 0.6f, 0.2f), 
-        Material_Type::metal, 1.0f, 0.0f);
+    Material material_right = {};
+    material_right.type = Material_Type::metal;
+    material_right.metal.color = color(0.8f, 0.6f, 0.2f);
+    material_right.metal.fuzz = 1.0f;
 
     world.spheres[0] = sphere(vec3(0.0f, -100.5f, -1.0f), 100.0f, &material_ground);
     world.spheres[1] = sphere(vec3(0.0f, 0.0f, -1.0f), 0.5f, &material_center);

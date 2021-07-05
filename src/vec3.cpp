@@ -32,6 +32,35 @@ Vec3 vec3(float a, float b, float c)
     return res;
 }
 
+Color color()
+{
+    Color color = {};
+
+    return color;
+}
+
+Color color(float val)
+{
+    Color color = {};
+
+    color.r = val;
+    color.g = val;
+    color.b = val;
+
+    return color;
+}
+
+Color color(float r, float g, float b)
+{
+    Color color = {};
+
+    color.r = r;
+    color.g = g;
+    color.b = b;
+
+    return color;
+}
+
 
 float length(Vec3 v)
 {

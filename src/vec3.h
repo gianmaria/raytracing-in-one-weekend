@@ -23,7 +23,11 @@ using Point3 = Vec3;
 
 Vec3 vec3();
 Vec3 vec3(float val);
-Vec3 vec3(float a, float b, float c);
+Vec3 vec3(float x, float y, float z);
+
+Color color();
+Color color(float val);
+Color color(float r, float g, float b);
 
 float length(Vec3 v);
 float length_squared(Vec3 v);

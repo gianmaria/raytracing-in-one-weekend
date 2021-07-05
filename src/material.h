@@ -10,27 +10,37 @@ enum class Material_Type : unsigned
     lambertian, metal, dielectric
 };
 
+struct Lambertian_Material
+{
+    Color color;
+};
+
+struct Metal_Material
+{
+    Color color;
+    float fuzz;
+};
+
+struct Dielectric_Material
+{
+    float ir; // Index of Refraction
+};
+
 struct Material
 {
     Material_Type type;
-    Color color;
-    float fuzz;
-    double ir; // Index of Refraction
+
+    union
+    {
+        Lambertian_Material lambertian;
+        Metal_Material metal;
+        Dielectric_Material dielectric;
+    };
+
 };
 
-Material material(Color color, Material_Type type, 
-    float fuzz, float index_of_refraction);
 
-bool lambertian_scatter(
-    Material* material,
-    Ray* r_in, Hit_Record* rec,
-    Color* attenuation, Ray* scattered);
-
-bool metal_scatter(
-    Material* material,
-    Ray* r_in, Hit_Record* rec,
-    Color* attenuation, Ray* scattered);
-
-bool dielectric_scatter(Material* material,
-    Ray* r_in, Hit_Record* rec,
+bool scatter(
+    const Material* material,
+    const Ray* r_in, const Hit_Record* rec,
     Color* attenuation, Ray* scattered);

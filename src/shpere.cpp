@@ -2,8 +2,9 @@
 
 #include "shpere.h"
 
-bool ray_hit_sphere(Sphere* sphere,
-    Ray* ray, float t_min, float t_max, Hit_Record* rec)
+bool ray_hit_sphere(
+    const Sphere* sphere,
+    const Ray* ray, float t_min, float t_max, Hit_Record* rec)
 {
     Vec3 oc = ray->origin - sphere->center;
     float a = length_squared(ray->direction);

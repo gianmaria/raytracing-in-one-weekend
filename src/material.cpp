@@ -3,24 +3,11 @@
 #include "hittable.h"
 #include "vec3.h"
 
-Material material(
-    Color color, Material_Type type, 
-    float fuzz, 
-    float index_of_refraction)
-{
-    Material material = {};
 
-    material.color = color;
-    material.type = type;
-    material.fuzz = fuzz;
-    material.ir = index_of_refraction;
 
-    return material;
-}
-
-bool lambertian_scatter(
-    Material* material,
-    Ray* r_in, Hit_Record* rec, 
+static bool lambertian_scatter(
+    const Lambertian_Material* material,
+    const Ray* r_in, const Hit_Record* rec, 
     Color* attenuation, Ray* scattered)
 {
     (void)r_in;
@@ -37,9 +24,9 @@ bool lambertian_scatter(
     return true;
 }
 
-bool metal_scatter(
-    Material* material, 
-    Ray* r_in, Hit_Record* rec, 
+static bool metal_scatter(
+    const Metal_Material* material,
+    const Ray* r_in, const Hit_Record* rec,
     Color* attenuation, Ray* scattered)
 {
     Vec3 reflected = reflect(unit_vector(r_in->direction), rec->normal);
@@ -49,14 +36,13 @@ bool metal_scatter(
     return (dot(scattered->direction, rec->normal) > 0.0f);
 }
 
-bool dielectric_scatter(
-    Material* material, 
-    Ray* r_in, 
-    Hit_Record* rec, 
-    Color* attenuation, 
-    Ray* scattered)
+static bool dielectric_scatter(
+    const Dielectric_Material* material,
+    const Ray* r_in, const Hit_Record* rec, 
+    Color* attenuation, Ray* scattered)
 {
     *attenuation = vec3(1.0f, 1.0f, 1.0f);
+
     float refraction_ratio = rec->front_face ? 
         (1.0f / material->ir) : 
         material->ir;
@@ -67,4 +53,38 @@ bool dielectric_scatter(
     *scattered = ray(rec->point, refracted);
 
     return true;
+}
+
+
+bool scatter(
+    const Material* material,
+    const Ray* r_in, const Hit_Record* rec,
+    Color* attenuation, Ray* scattered)
+{
+    switch (material->type)
+    {
+    case Material_Type::lambertian:
+        return lambertian_scatter(
+            &material->lambertian,
+            r_in, rec,
+            attenuation, scattered);
+        break;
+
+    case Material_Type::metal:
+        return metal_scatter(
+            &material->metal,
+            r_in, rec,
+            attenuation, scattered);
+        break;
+
+    case Material_Type::dielectric:
+        return dielectric_scatter(
+            &material->dielectric,
+            r_in, rec,
+            attenuation, scattered
+        );
+        break;
+    }
+
+    return false;
 }

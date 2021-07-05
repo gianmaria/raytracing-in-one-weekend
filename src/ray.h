@@ -10,4 +10,4 @@ struct Ray
 
 Ray ray(Point3 origin, Vec3 dir);
 
-Point3 ray_at(Ray* ray, float t);
+Point3 ray_at(const Ray* ray, float t);
