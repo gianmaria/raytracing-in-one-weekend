@@ -164,8 +164,8 @@ int main(void)
     material_ground.lambertian.color = color(0.8f, 0.8f, 0.0f);
 
     Material material_center = {};
-    material_center.type = Material_Type::dielectric;
-    material_center.dielectric.ir = 1.5f;
+    material_center.type = Material_Type::lambertian;
+    material_center.lambertian.color = color(0.1f, 0.2f, 0.5f);
 
     Material material_left = {};
     material_left.type = Material_Type::dielectric;
@@ -174,7 +174,7 @@ int main(void)
     Material material_right = {};
     material_right.type = Material_Type::metal;
     material_right.metal.color = color(0.8f, 0.6f, 0.2f);
-    material_right.metal.fuzz = 1.0f;
+    material_right.metal.fuzz = 0.0f;
 
     world.spheres[0] = sphere(vec3(0.0f, -100.5f, -1.0f), 100.0f, &material_ground);
     world.spheres[1] = sphere(vec3(0.0f, 0.0f, -1.0f), 0.5f, &material_center);

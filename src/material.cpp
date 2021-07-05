@@ -1,3 +1,5 @@
+#include <math.h>
+
 #include "material.h"
 #include "ray.h"
 #include "hittable.h"
@@ -41,16 +43,25 @@ static bool dielectric_scatter(
     const Ray* r_in, const Hit_Record* rec, 
     Color* attenuation, Ray* scattered)
 {
-    *attenuation = vec3(1.0f, 1.0f, 1.0f);
-
+    *attenuation = color(1.0f, 1.0f, 1.0f);
     float refraction_ratio = rec->front_face ? 
         (1.0f / material->ir) : 
         material->ir;
 
     Vec3 unit_direction = unit_vector(r_in->direction);
-    Vec3 refracted = refract(unit_direction, rec->normal, refraction_ratio);
+    float cos_theta = fminf(dot(-unit_direction, rec->normal), 1.0f);
+    float sin_theta = sqrtf(1.0f - cos_theta * cos_theta);
 
-    *scattered = ray(rec->point, refracted);
+    bool cannot_refract = refraction_ratio * sin_theta > 1.0f;
+    
+    Vec3 direction = {};
+
+    if (cannot_refract)
+        direction = reflect(unit_direction, rec->normal);
+    else
+        direction = refract(unit_direction, rec->normal, refraction_ratio);
+
+    *scattered = ray(rec->point, direction);
 
     return true;
 }
