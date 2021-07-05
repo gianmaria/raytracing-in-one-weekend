@@ -6,9 +6,9 @@ bool ray_hit_sphere(Sphere* sphere,
     Ray* ray, float t_min, float t_max, Hit_Record* rec)
 {
     Vec3 oc = ray->origin - sphere->center;
-    float a = len_squared(ray->direction);
+    float a = length_squared(ray->direction);
     float half_b = dot(oc, ray->direction);
-    float c = len_squared(oc) - sphere->radius * sphere->radius;
+    float c = length_squared(oc) - sphere->radius * sphere->radius;
     float discriminant = half_b * half_b - a * c;
 
     if (discriminant < 0.0f)
@@ -26,7 +26,7 @@ bool ray_hit_sphere(Sphere* sphere,
     }
 
     rec->t = root;
-    rec->point = ray->at(rec->t);
+    rec->point = ray_at(ray, rec->t);
     rec->normal = (rec->point - sphere->center) / sphere->radius;
     Vec3 outward_normal = (rec->point - sphere->center) / sphere->radius;
     rec->set_face_normal(ray, outward_normal);

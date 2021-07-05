@@ -25,8 +25,8 @@ Vec3 vec3();
 Vec3 vec3(float val);
 Vec3 vec3(float a, float b, float c);
 
-float len(Vec3 v);
-float len_squared(Vec3 v);
+float length(Vec3 v);
+float length_squared(Vec3 v);
 
 Vec3 random_vec3();
 Vec3 random_vec3(float min, float max);
@@ -41,6 +41,7 @@ Vec3 unit_vector(Vec3 a);
 
 Vec3 random_in_unit_sphere();
 
+Vec3 refract(Vec3 uv, Vec3 n, float etai_over_etat);
 
 
 

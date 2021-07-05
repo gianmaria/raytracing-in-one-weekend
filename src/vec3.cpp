@@ -33,14 +33,14 @@ Vec3 vec3(float a, float b, float c)
 }
 
 
-float len(Vec3 v)
+float length(Vec3 v)
 {
-    float res = sqrtf(len_squared(v));
+    float res = sqrtf(length_squared(v));
 
     return res;
 }
 
-float len_squared(Vec3 v)
+float length_squared(Vec3 v)
 {
     float res = 
         v.x * v.x +
@@ -120,7 +120,7 @@ Vec3 cross(Vec3 a, Vec3 b)
 
 Vec3 unit_vector(Vec3 a)
 {
-    return a / len(a);
+    return a / length(a);
 }
 
 Vec3 random_in_unit_sphere()
@@ -129,11 +129,19 @@ Vec3 random_in_unit_sphere()
     {
         Vec3 p = random_vec3(-1.0f, 1.0f);
 
-        if (len_squared(p) >= 1.0f)
+        if (length_squared(p) >= 1.0f)
             continue;
 
         return p;
     }
+}
+
+Vec3 refract(Vec3 uv, Vec3 n, float etai_over_etat)
+{
+    float cos_theta = fminf(dot(-uv, n), 1.0f);
+    Vec3 r_out_perp = etai_over_etat * (uv + cos_theta * n);
+    Vec3 r_out_parallel = -sqrtf(fabsf(1.0f - length_squared(r_out_perp))) * n;
+    return r_out_perp + r_out_parallel;
 }
 
 

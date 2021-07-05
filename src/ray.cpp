@@ -11,7 +11,7 @@ Ray ray(Point3 origin, Vec3 dir)
     return res;
 }
 
-Point3 Ray::at(float t)
+Point3 ray_at(Ray* ray, float t)
 {
-    return origin + t * direction;
+    return ray->origin + t * ray->direction;
 }

@@ -134,6 +134,15 @@ Color ray_color(Ray* ray, World* world, int depth)
                     &attenuation,
                     &scattered);
             } break;
+
+            case Material_Type::dielectric:
+            {
+                res = dielectric_scatter(
+                    rec.material,
+                    ray, &rec,
+                    &attenuation,
+                    &scattered);
+            } break;
         }
         
         if (res)
@@ -175,14 +184,16 @@ int main(void)
     World world = {};
 
     Material material_ground = material(vec3(0.8f, 0.8f, 0.0f),
-        Material_Type::lambertian, 0.0f);
+        Material_Type::lambertian, 0.0f, 0.0f);
+
     Material material_center = material(vec3(0.7f, 0.3f, 0.3f),
-        Material_Type::lambertian, 0.0f);
+        Material_Type::dielectric, 0.0f, 1.5);
 
     Material material_left = material(vec3(0.8f, 0.8f, 0.8f), 
-        Material_Type::metal, 0.3f);
+        Material_Type::dielectric, 0.3f, 1.5f);
+    
     Material material_right = material(vec3(0.8f, 0.6f, 0.2f), 
-        Material_Type::metal, 1.0f);
+        Material_Type::metal, 1.0f, 0.0f);
 
     world.spheres[0] = sphere(vec3(0.0f, -100.5f, -1.0f), 100.0f, &material_ground);
     world.spheres[1] = sphere(vec3(0.0f, 0.0f, -1.0f), 0.5f, &material_center);

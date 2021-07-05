@@ -6,8 +6,8 @@ struct Ray
 {    
     Point3 origin;
     Vec3 direction;
-
-    Point3 at(float t);
 };
 
 Ray ray(Point3 origin, Vec3 dir);
+
+Point3 ray_at(Ray* ray, float t);
