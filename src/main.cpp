@@ -7,6 +7,7 @@
 
 #include <iostream>
 #include <chrono>
+#include <thread>
 
 namespace chrono = std::chrono;
 using std::cout;
@@ -56,7 +57,7 @@ struct World
     Sphere spheres[5];
 };
 
-void write_color(FILE* fp, Color pixel_color, int samples_per_pixel)
+static void write_color(FILE* fp, Color pixel_color, int samples_per_pixel)
 {
     float r = pixel_color.r;
     float g = pixel_color.g;
@@ -75,7 +76,7 @@ void write_color(FILE* fp, Color pixel_color, int samples_per_pixel)
         (int)(256.0f * clamp(b, 0.0f, 0.999f)));
 }
 
-bool ray_hit_object_in_world(
+static bool ray_hit_object_in_world(
     const Ray* ray, 
     const World* world, 
     Hit_Record* rec)
@@ -102,7 +103,7 @@ bool ray_hit_object_in_world(
     return hit_anything;
 }
 
-Color ray_color(
+static Color ray_color(
     const Ray* ray, 
     const World* world, 
     int depth)
@@ -133,11 +134,26 @@ Color ray_color(
 }
 
 
+static bool done_rendering = false;
+
+static void print_progress()
+{
+    using namespace std::chrono_literals;
+
+    while (!done_rendering)
+    {
+        printf(".");
+        std::this_thread::sleep_for(1s);
+    }
+    printf(" ");
+}
 
 
 
 int main(void)
 {
+    setbuf(stdout, NULL);
+
     FILE* fp = fopen("output.ppm", "wb");
 
     // Image 
@@ -187,7 +203,7 @@ int main(void)
     Point3 lookat = vec3(0.0f, 0.0f, -1.0f);
     Vec3 vup = vec3(0.0f, 1.0f, 0.0f);
     float dist_to_focus = length(lookfrom - lookat);
-    float aperture = 2.0f;
+    float aperture = 1.0f;
 
     Camera cam = camera(
         lookfrom, 
@@ -204,7 +220,8 @@ int main(void)
     fprintf(fp, "%d %d\n", image_width, image_height);
     fprintf(fp, "255\n");
 
-    printf("Begin rendering... ");
+    printf("Begin rendering");
+    std::thread progress_thread(print_progress);
     chrono::time_point<chrono::steady_clock> start = chrono::steady_clock::now();
 
     for (int row = image_height - 1;
@@ -237,6 +254,11 @@ int main(void)
 
     auto end = chrono::steady_clock::now();
     auto total_time = chrono::duration_cast<chrono::milliseconds>(end - start).count();
+    
+    done_rendering = true;
+    if (progress_thread.joinable())
+        progress_thread.join();
+
     cout << "Done! (" << total_time <<"ms)" << endl;
 
     fclose(fp);
