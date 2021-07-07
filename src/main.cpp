@@ -183,16 +183,21 @@ int main(void)
 
     // Camera
 
-    Camera cam = camera(
-        vec3(-2.0f, 2.0f, 1.0f), 
-        vec3(0.0f, 0.0f, -1.0f), 
-        vec3(0.0f, 1.0f, 0.0f), 
-        90.0f,
-        aspect_ratio);
+    Point3 lookfrom = vec3(3.0f, 3.0f, 2.0f);
+    Point3 lookat = vec3(0.0f, 0.0f, -1.0f);
+    Vec3 vup = vec3(0.0f, 1.0f, 0.0f);
+    float dist_to_focus = length(lookfrom - lookat);
+    float aperture = 2.0f;
 
-    cam = camera(
-        vec3(-2, 2, 1), vec3(0, 0, -1), vec3(0, 1, 0), 20, aspect_ratio
-    );
+    Camera cam = camera(
+        lookfrom, 
+        lookat, 
+        vup, 
+        20.0f, 
+        aspect_ratio, 
+        aperture, 
+        dist_to_focus);
+
     // Render
 
     fprintf(fp, "P3\n");

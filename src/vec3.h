@@ -36,6 +36,7 @@ Vec3 random_vec3();
 Vec3 random_vec3(float min, float max);
 Vec3 random_unit_vector();
 Vec3 random_in_hemisphere(Vec3 normal);
+Vec3 random_in_unit_disk();
 bool near_zero(Vec3 v);
 Vec3 reflect(Vec3 v, Vec3 n);
 

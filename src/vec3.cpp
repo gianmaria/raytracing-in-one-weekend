@@ -111,6 +111,17 @@ Vec3 random_in_hemisphere(Vec3 normal)
         return -in_unit_sphere;
 }
 
+Vec3 random_in_unit_disk()
+{
+    while (true)
+    {
+        Vec3 p = vec3(random_float(-1.0f, 1.0f), random_float(-1.0f, 1.0f), 0.0f);
+        if (length_squared(p) >= 1.0f)
+            continue;
+        return p;
+    }
+}
+
 bool near_zero(Vec3 v)
 {
     // Return true if the vector is close to zero in all dimensions.
