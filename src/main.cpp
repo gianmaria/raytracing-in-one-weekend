@@ -155,10 +155,6 @@ int main(void)
     max_depth = 25;
 #endif
 
-    // World 
-
-    World world = {};
-
     Material material_ground = {};
     material_ground.type = Material_Type::lambertian;
     material_ground.lambertian.color = color(0.8f, 0.8f, 0.0f);
@@ -176,6 +172,9 @@ int main(void)
     material_right.metal.color = color(0.8f, 0.6f, 0.2f);
     material_right.metal.fuzz = 0.0f;
 
+    // World 
+    World world = {};
+
     world.spheres[0] = sphere(vec3(0.0f, -100.5f, -1.0f), 100.0f, &material_ground);
     world.spheres[1] = sphere(vec3(0.0f, 0.0f, -1.0f), 0.5f, &material_center);
     world.spheres[2] = sphere(vec3(-1.0f, 0.0f, -1.0f), 0.5f, &material_left);
@@ -184,8 +183,16 @@ int main(void)
 
     // Camera
 
-    Camera cam = default_camera();
+    Camera cam = camera(
+        vec3(-2.0f, 2.0f, 1.0f), 
+        vec3(0.0f, 0.0f, -1.0f), 
+        vec3(0.0f, 1.0f, 0.0f), 
+        90.0f,
+        aspect_ratio);
 
+    cam = camera(
+        vec3(-2, 2, 1), vec3(0, 0, -1), vec3(0, 1, 0), 20, aspect_ratio
+    );
     // Render
 
     fprintf(fp, "P3\n");

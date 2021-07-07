@@ -6,7 +6,7 @@
 const float INF = INFINITY;
 const float PI = 3.141592653f;
 
-inline float deg_to_rads(float deg) 
+inline float degrees_to_radians(float deg)
 {
     return deg * PI / 180.0f;
 }

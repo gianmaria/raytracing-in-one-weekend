@@ -12,6 +12,12 @@ struct Camera
 
 };
 
-Camera default_camera();
+Camera camera(
+    Point3 lookfrom,
+    Point3 lookat,
+    Vec3 vup,
+    float vfov, // vertical field-of-view in degrees
+    float aspect_ratio);
 
-Ray get_ray_from_camera(Camera* camera, float u, float v);
+
+Ray get_ray_from_camera(Camera* camera, float s, float t);
