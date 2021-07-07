@@ -4,8 +4,15 @@
 #include "ray.h"
 #include "hittable.h"
 #include "vec3.h"
+#include "rtweekend.h"
 
-
+static float reflectance(float cosine, float ref_idx)
+{
+    // Use Schlick's approximation for reflectance.
+    float r0 = (1.0f - ref_idx) / (1.0f + ref_idx);
+    r0 = r0 * r0;
+    return r0 + (1.0f - r0) * powf((1.0f - cosine), 5.0f);
+}
 
 static bool lambertian_scatter(
     const Lambertian_Material* material,
@@ -56,7 +63,7 @@ static bool dielectric_scatter(
     
     Vec3 direction = {};
 
-    if (cannot_refract)
+    if (cannot_refract || reflectance(cos_theta, refraction_ratio) > random_float())
         direction = reflect(unit_direction, rec->normal);
     else
         direction = refract(unit_direction, rec->normal, refraction_ratio);
@@ -65,6 +72,8 @@ static bool dielectric_scatter(
 
     return true;
 }
+
+
 
 
 bool scatter(

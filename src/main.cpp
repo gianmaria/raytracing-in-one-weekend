@@ -53,7 +53,7 @@ int main1(void)
 
 struct World
 {
-    Sphere spheres[4];
+    Sphere spheres[5];
 };
 
 void write_color(FILE* fp, Color pixel_color, int samples_per_pixel)
@@ -179,7 +179,8 @@ int main(void)
     world.spheres[0] = sphere(vec3(0.0f, -100.5f, -1.0f), 100.0f, &material_ground);
     world.spheres[1] = sphere(vec3(0.0f, 0.0f, -1.0f), 0.5f, &material_center);
     world.spheres[2] = sphere(vec3(-1.0f, 0.0f, -1.0f), 0.5f, &material_left);
-    world.spheres[3] = sphere(vec3(1.0f, 0.0f, -1.0f), 0.5f, &material_right);
+    world.spheres[3] = sphere(vec3(-1.0f, 0.0f, -1.0f), -0.4f, &material_left);
+    world.spheres[4] = sphere(vec3(1.0f, 0.0f, -1.0f), 0.5f, &material_right);
 
     // Camera
 
