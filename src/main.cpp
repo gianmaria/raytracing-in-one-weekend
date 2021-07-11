@@ -54,10 +54,13 @@ struct Image
     unsigned m_width = 0;
     float m_aspect_ratio = 0.0f;
     unsigned m_height = 0;
+    unsigned m_samples_per_pixel = 0;
+    unsigned m_max_depth = 0;
     std::vector<Pixel> m_pixels;
 
-    Image(unsigned width, float aspect_ratio) :
-        m_width(width), m_aspect_ratio(aspect_ratio)
+    Image(unsigned width, float aspect_ratio, unsigned samples_per_pixel, unsigned max_depth) :
+        m_width(width), m_aspect_ratio(aspect_ratio), m_samples_per_pixel(samples_per_pixel),
+        m_max_depth(max_depth)
     {
         m_height = (unsigned)((float)m_width / m_aspect_ratio);
         m_pixels.resize(m_width * m_height);
@@ -240,35 +243,7 @@ static bool g_done_rendering = false;
 static unsigned g_total_scanlines = 0;
 static unsigned g_scanlines_processed = 0;
 
-static long long print_progress()
-{
-    using namespace std::chrono_literals;
 
-    chrono::time_point<chrono::steady_clock> start = chrono::steady_clock::now();
-
-    printf("Begin rendering\n");
-
-    while (!g_done_rendering)
-    {
-        float perc = (float)g_scanlines_processed / (float)g_total_scanlines * 100.0f;
-        auto now = chrono::steady_clock::now();
-        long long elapsed_ms = 
-            chrono::duration_cast<chrono::milliseconds>(now - start).count();
-
-        long long sec = elapsed_ms / 1000;
-        
-        printf("[%5.2f%%] %llds\n", perc, sec);
-
-        std::this_thread::sleep_for(1s);
-    }
-
-    auto end = chrono::steady_clock::now();
-    auto total_time = chrono::duration_cast<chrono::milliseconds>(end - start).count();
-
-    printf("Done! (%lldms)\n", total_time);
-
-    return total_time;
-}
 
 static void init_random_scene()
 {
@@ -369,7 +344,40 @@ static void init_random_scene()
     }
 }
 
+static void render_scene(Image& image, const Camera& cam)
+{
+    for (unsigned row_ = 0;
+        row_ < image.m_height;
+        ++row_)
+    {
+        unsigned row = image.m_height - 1 - row_;
 
+        for (unsigned col = 0;
+            col < image.m_width;
+            ++col)
+        {
+            Color pixel_color = vec3(0.0f);
+
+            for (unsigned s = 0;
+                s < image.m_samples_per_pixel;
+                ++s)
+            {
+                float u = ((float)col + random_float()) / ((float)image.m_width - 1.0f);
+                float v = ((float)row + random_float()) / ((float)image.m_height - 1.0f);
+
+                Ray ray = get_ray_from_camera(&cam, u, v);
+
+                pixel_color += ray_color(&ray, &global_world, image.m_max_depth);
+            }
+
+            write_color(&image, row, col, pixel_color, image.m_samples_per_pixel);
+        }
+
+        ++g_scanlines_processed;
+    }
+
+    g_done_rendering = true;
+}
 
 int main(void)
 {
@@ -377,11 +385,8 @@ int main(void)
 
     // Image
 
-    Image image(240, 3.0f / 2.0f);
+    Image image(240, 3.0f / 2.0f, 50, 25);
 
-    unsigned samples_per_pixel = 50;
-    unsigned max_depth = 25;
-    
 #define GOTTA_GO_SLOW 0
 
 #if GOTTA_GO_SLOW
@@ -414,43 +419,39 @@ int main(void)
 
     g_total_scanlines = image.m_height;
     
-    std::future<long long> future = std::async(&print_progress);
-    
     // Render
-
-    for (unsigned row_ = 0;
-        row_ < image.m_height;
-        ++row_)
-    {
-        unsigned row = image.m_height - 1 - row_;
-
-        for (unsigned col = 0;
-            col < image.m_width;
-            ++col)
-        {
-            Color pixel_color = vec3(0.0f);
-
-            for (unsigned s = 0;
-                s < samples_per_pixel;
-                ++s)
-            {
-                float u = ((float)col + random_float()) / ((float)image.m_width - 1.0f);
-                float v = ((float)row + random_float()) / ((float)image.m_height - 1.0f);
-            
-                Ray ray = get_ray_from_camera(&cam, u, v);
-
-                pixel_color += ray_color(&ray, &global_world, max_depth);
-            }
-            
-            write_color(&image, row, col, pixel_color, samples_per_pixel);
-        }
-
-        ++g_scanlines_processed;
-    }
     
-    g_done_rendering = true;
-    auto total_time_ms = future.get();
+    std::thread worker(render_scene, std::ref(image), std::ref(cam));
+    
 
+    // Print progress
+
+    chrono::time_point<chrono::steady_clock> start = chrono::steady_clock::now();
+
+    printf("Begin rendering\n");
+
+    while (!g_done_rendering)
+    {
+        float perc = (float)g_scanlines_processed / (float)g_total_scanlines * 100.0f;
+        auto now = chrono::steady_clock::now();
+        long long elapsed_ms =
+            chrono::duration_cast<chrono::milliseconds>(now - start).count();
+
+        long long sec = elapsed_ms / 1000;
+
+        printf("[%5.2f%%] %llds\n", perc, sec);
+
+        std::this_thread::sleep_for(std::chrono::seconds(2));
+    }
+
+    auto end = chrono::steady_clock::now();
+    auto total_time_ms = chrono::duration_cast<chrono::milliseconds>(end - start).count();
+
+    printf("Done! (%lldms)\n", total_time_ms);
+
+    if (worker.joinable())
+        worker.join();
+    
     std::string_view filename("output.ppm");
 
     if (!image.save(filename, total_time_ms))
