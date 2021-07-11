@@ -5,9 +5,14 @@
 #include <assert.h>
 #include <math.h>
 
+#include <cassert>
 #include <iostream>
+#include <fstream>
 #include <chrono>
 #include <thread>
+#include <string_view>
+#include <vector>
+#include <future>
 
 namespace chrono = std::chrono;
 using std::cout;
@@ -21,36 +26,6 @@ using std::endl;
 #include "camera.h"
 #include "material.h"
 
-#if 0
-int main1(void)
-{
-    Vec3 a = vec3(1.0f, 2.0f, 3.0f);
-    Vec3 b = vec3(4.0f, 5.0f, 6.0f);
-
-    Vec3 res = a + b;
-    Vec3 res2 = {};
-    res2 += a;
-    res2 += b;
-
-    assert(res == res2 && "Math is worng!");
-
-    Vec3 c = -res;
-
-    Vec3 d = { 1,2,3 };
-    d *= 2.0f;
-
-    Vec3 e = { 3,4,5 };
-    float e_len = len(e);
-
-    {
-        auto res = len(e);
-        auto res2 = unit(e);
-        auto res3 = len(res2);
-        int k = 0;
-    }
-    return 0;
-}
-#endif
 
 struct World
 {
@@ -60,6 +35,109 @@ struct World
 
 World global_world;
 
+
+struct alignas(1) Pixel
+{
+    unsigned char r = 0;
+    unsigned char g = 0;
+    unsigned char b = 0;
+
+    Pixel() = default;
+
+    Pixel(unsigned char r, unsigned char g, unsigned char b) :
+        r(r), g(g), b(b)
+    {}
+};
+
+struct Image
+{
+    unsigned m_width = 0;
+    float m_aspect_ratio = 0.0f;
+    unsigned m_height = 0;
+    std::vector<Pixel> m_pixels;
+
+    Image(unsigned width, float aspect_ratio) :
+        m_width(width), m_aspect_ratio(aspect_ratio)
+    {
+        m_height = (unsigned)((float)m_width / m_aspect_ratio);
+        m_pixels.resize(m_width * m_height);
+    }
+
+    Pixel& at(unsigned row, unsigned col)
+    {
+        if (row < m_height &&
+            col < m_width)
+        {
+            unsigned index = m_width * row + col;
+            return m_pixels[index];
+        }
+
+        cout << "[ERROR] row or col out of bounds" << endl;
+        exit(-1);
+    }
+
+    float aspect_ratio()
+    {
+        float ar = (float)m_width / (float)m_height;
+        return ar;
+    }
+
+    Pixel& operator[](unsigned index)
+    {
+        if (index < m_width * m_height)
+        {
+            return m_pixels[index];
+        }
+
+        cout << "[ERROR] index out of bounds" << endl;
+        exit(-1);
+    }
+
+    bool save(const std::string_view& filename, long long total_time_ms)
+    {
+        try
+        {
+            std::fstream fs;
+            fs.open(filename.data(), std::fstream::out | std::fstream::binary);
+        
+            if (!fs.is_open())
+            {
+                return false;
+            }
+
+            fs << "P3\n";
+            fs << m_width << " " << m_height << "\n";
+            fs << "255\n";
+            fs << "# took " << total_time_ms << "ms\n";
+
+            for (unsigned row_ = 0;
+                row_ < m_height;
+                ++row_)
+            {
+                unsigned row = m_height - 1 - row_;
+
+                for (unsigned col = 0;
+                    col < m_width;
+                    ++col)
+                {
+                    Pixel& p = at(row, col);
+                    fs << (int)p.r << " " << (int)p.g << " " << (int)p.b << "\n";
+                }
+            }
+
+            fs.close();
+
+            return true;
+        } 
+        catch (std::ios_base::failure& e)
+        {
+            cout << "[ERROR] cannot open file '" << filename << "' for writing: " <<
+                e.what() << "(" << e.code() << ")" << endl;
+            return false;
+        }
+    }
+
+};
 
 static bool add_sphere_to_world(World* world, const Sphere* new_sphere)
 {
@@ -78,7 +156,8 @@ static bool add_sphere_to_world(World* world, const Sphere* new_sphere)
     }
 }
 
-static void write_color(FILE* fp, Color pixel_color, int samples_per_pixel)
+static void write_color(Image* image, unsigned row, unsigned col, 
+                        Color pixel_color, unsigned samples_per_pixel)
 {
     float r = pixel_color.r;
     float g = pixel_color.g;
@@ -91,10 +170,12 @@ static void write_color(FILE* fp, Color pixel_color, int samples_per_pixel)
     g = sqrtf(scale * g);
     b = sqrtf(scale * b);
 
-    fprintf(fp, "%d %d %d\n",
-        (int)(256.0f * clamp(r, 0.0f, 0.999f)), 
-        (int)(256.0f * clamp(g, 0.0f, 0.999f)), 
-        (int)(256.0f * clamp(b, 0.0f, 0.999f)));
+    Pixel p(
+        (unsigned char)(256.0f * clamp(r, 0.0f, 0.999f)),
+        (unsigned char)(256.0f * clamp(g, 0.0f, 0.999f)),
+        (unsigned char)(256.0f * clamp(b, 0.0f, 0.999f)));
+
+    image->at(row, col) = p;
 }
 
 static bool ray_hit_object_in_world(
@@ -127,11 +208,11 @@ static bool ray_hit_object_in_world(
 static Color ray_color(
     const Ray* ray, 
     const World* world, 
-    int depth)
+    unsigned depth)
 {
     Hit_Record rec = {};
 
-    if (depth <= 0)
+    if (depth == 0)
     {
         return vec3(0.0f);
     }
@@ -156,10 +237,10 @@ static Color ray_color(
 
 
 static bool g_done_rendering = false;
-static int g_total_scanlines = 0;
-static int g_scanlines_processed = 0;
+static unsigned g_total_scanlines = 0;
+static unsigned g_scanlines_processed = 0;
 
-static void print_progress()
+static long long print_progress()
 {
     using namespace std::chrono_literals;
 
@@ -185,8 +266,9 @@ static void print_progress()
     auto total_time = chrono::duration_cast<chrono::milliseconds>(end - start).count();
 
     printf("Done! (%lldms)\n", total_time);
-}
 
+    return total_time;
+}
 
 static void init_random_scene()
 {
@@ -285,23 +367,20 @@ static void init_random_scene()
 
         add_sphere_to_world(&global_world, &s);
     }
-
-    int stop = 0;
 }
+
+
 
 int main(void)
 {
     setbuf(stdout, NULL);
 
-    FILE* fp = fopen("output.ppm", "wb");
+    // Image
 
-    // Image 
+    Image image(240, 3.0f / 2.0f);
 
-    float aspect_ratio = 3.0f / 2.0f;
-    int image_width = 240;
-    int image_height = (int)((float)image_width / aspect_ratio);
-    int samples_per_pixel = 50;
-    int max_depth = 25;
+    unsigned samples_per_pixel = 50;
+    unsigned max_depth = 25;
     
 #define GOTTA_GO_SLOW 0
 
@@ -328,53 +407,56 @@ int main(void)
         lookat, 
         vup, 
         20.0f, 
-        aspect_ratio, 
+        image.aspect_ratio(),
         aperture, 
         dist_to_focus);
 
+
+    g_total_scanlines = image.m_height;
+    
+    std::future<long long> future = std::async(&print_progress);
+    
     // Render
 
-    fprintf(fp, "P3\n");
-    fprintf(fp, "%d %d\n", image_width, image_height);
-    fprintf(fp, "255\n");
-
-    std::thread progress_thread(print_progress);
-    
-    g_total_scanlines = image_height;
-
-    for (int row = image_height - 1;
-        row >= 0;
-        --row)
+    for (unsigned row_ = 0;
+        row_ < image.m_height;
+        ++row_)
     {
-        for (int col = 0;
-            col < image_width;
+        unsigned row = image.m_height - 1 - row_;
+
+        for (unsigned col = 0;
+            col < image.m_width;
             ++col)
         {
             Color pixel_color = vec3(0.0f);
 
-            for (int s = 0;
+            for (unsigned s = 0;
                 s < samples_per_pixel;
                 ++s)
             {
-                float u = ((float)col + random_float()) / ((float)image_width - 1.0f);
-                float v = ((float)row + random_float()) / ((float)image_height - 1.0f);
+                float u = ((float)col + random_float()) / ((float)image.m_width - 1.0f);
+                float v = ((float)row + random_float()) / ((float)image.m_height - 1.0f);
             
                 Ray ray = get_ray_from_camera(&cam, u, v);
 
                 pixel_color += ray_color(&ray, &global_world, max_depth);
             }
             
-            write_color(fp, pixel_color, samples_per_pixel);
+            write_color(&image, row, col, pixel_color, samples_per_pixel);
         }
 
         ++g_scanlines_processed;
     }
     
     g_done_rendering = true;
-    if (progress_thread.joinable())
-        progress_thread.join();
+    auto total_time_ms = future.get();
 
-    fclose(fp);
+    std::string_view filename("output.ppm");
+
+    if (!image.save(filename, total_time_ms))
+    {
+        cout << "[ERROR] cannot save image '" << filename << "' on disk" << endl;
+    }
 
     return 0;
 }
