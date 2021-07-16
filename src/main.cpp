@@ -5,6 +5,7 @@
 #include <assert.h>
 #include <math.h>
 
+#include <atomic>
 #include <cassert>
 #include <iostream>
 #include <fstream>
@@ -25,6 +26,11 @@ using std::endl;
 #include "rtweekend.h"
 #include "camera.h"
 #include "material.h"
+
+
+static std::atomic_uint g_total_scanlines = 0;
+static std::atomic_uint g_scanlines_processed = 0;
+
 
 
 struct World
@@ -56,7 +62,6 @@ struct Image
     unsigned m_height = 0;
     unsigned m_samples_per_pixel = 0;
     unsigned m_max_depth = 0;
-    std::vector<Pixel> m_pixels;
 
     Image(unsigned width, float aspect_ratio, unsigned samples_per_pixel, unsigned max_depth) :
         m_width(width), m_aspect_ratio(aspect_ratio), m_samples_per_pixel(samples_per_pixel),
@@ -72,28 +77,17 @@ struct Image
             col < m_width)
         {
             unsigned index = m_width * row + col;
-            return m_pixels[index];
+            return m_pixels.at(index);
         }
 
         cout << "[ERROR] row or col out of bounds" << endl;
         exit(-1);
     }
 
-    float aspect_ratio()
+    float aspect_ratio() const
     {
         float ar = (float)m_width / (float)m_height;
         return ar;
-    }
-
-    Pixel& operator[](unsigned index)
-    {
-        if (index < m_width * m_height)
-        {
-            return m_pixels[index];
-        }
-
-        cout << "[ERROR] index out of bounds" << endl;
-        exit(-1);
     }
 
     bool save(const std::string_view& filename, long long total_time_ms)
@@ -102,7 +96,7 @@ struct Image
         {
             std::fstream fs;
             fs.open(filename.data(), std::fstream::out | std::fstream::binary);
-        
+
             if (!fs.is_open())
             {
                 return false;
@@ -113,25 +107,39 @@ struct Image
             fs << "255\n";
             fs << "# took " << total_time_ms << "ms\n";
 
-            for (unsigned row_ = 0;
-                row_ < m_height;
-                ++row_)
+#if 1
+            for (unsigned row = m_height - 1;
+                 row != UINT_MAX;
+                 --row)
             {
-                unsigned row = m_height - 1 - row_;
-
                 for (unsigned col = 0;
-                    col < m_width;
-                    ++col)
+                     col < m_width;
+                     ++col)
                 {
                     Pixel& p = at(row, col);
                     fs << (int)p.r << " " << (int)p.g << " " << (int)p.b << "\n";
                 }
             }
+#else
+            for (unsigned row = 0;
+                 row < m_height;
+                 ++row)
+            {
+                for (unsigned col = 0;
+                     col < m_width;
+                     ++col)
+                {
+                    Pixel& p = at(row, col);
+                    fs << (int)p.r << " " << (int)p.g << " " << (int)p.b << "\n";
+                }
+            }
+#endif // 0
+
 
             fs.close();
 
             return true;
-        } 
+        }
         catch (std::ios_base::failure& e)
         {
             cout << "[ERROR] cannot open file '" << filename << "' for writing: " <<
@@ -140,6 +148,8 @@ struct Image
         }
     }
 
+private:
+    std::vector<Pixel> m_pixels;
 };
 
 static bool add_sphere_to_world(World* world, const Sphere* new_sphere)
@@ -159,7 +169,7 @@ static bool add_sphere_to_world(World* world, const Sphere* new_sphere)
     }
 }
 
-static void write_color(Image* image, unsigned row, unsigned col, 
+static void write_color(Image* image, unsigned row, unsigned col,
                         Color pixel_color, unsigned samples_per_pixel)
 {
     float r = pixel_color.r;
@@ -182,8 +192,8 @@ static void write_color(Image* image, unsigned row, unsigned col,
 }
 
 static bool ray_hit_object_in_world(
-    const Ray* ray, 
-    const World* world, 
+    const Ray* ray,
+    const World* world,
     Hit_Record* rec)
 {
     Hit_Record temp_rec = {};
@@ -192,8 +202,8 @@ static bool ray_hit_object_in_world(
 
     // check spheres
     for (size_t i = 0;
-        i < world->sphere_count;
-        ++i)
+         i < world->sphere_count;
+         ++i)
     {
         const Sphere* sphere = &world->spheres[i];
 
@@ -209,8 +219,8 @@ static bool ray_hit_object_in_world(
 }
 
 static Color ray_color(
-    const Ray* ray, 
-    const World* world, 
+    const Ray* ray,
+    const World* world,
     unsigned depth)
 {
     Hit_Record rec = {};
@@ -226,7 +236,7 @@ static Color ray_color(
         Color attenuation = {};
 
         bool res = scatter(rec.material, ray, &rec, &attenuation, &scattered);
-        
+
         if (res)
             return attenuation * ray_color(&scattered, world, depth - 1);
         else
@@ -239,9 +249,6 @@ static Color ray_color(
 }
 
 
-static bool g_done_rendering = false;
-static unsigned g_total_scanlines = 0;
-static unsigned g_scanlines_processed = 0;
 
 
 
@@ -256,24 +263,24 @@ static void init_random_scene()
         add_sphere_to_world(&global_world, &s);
     }
 
-    for (int a = -11; a < 11; ++a) 
+    for (int a = -11; a < 11; ++a)
     {
-        for (int b = -11; b < 11; ++b) 
+        for (int b = -11; b < 11; ++b)
         {
             float choose_mat = random_float();
 
             Point3 center = vec3(
-                (float)a + 0.9f * random_float(), 
-                0.2f, 
+                (float)a + 0.9f * random_float(),
+                0.2f,
                 (float)b + 0.9f * random_float());
 
             if (length(center - vec3(4.0f, 0.2f, 0.0f)) > 0.9f)
             {
-                if (choose_mat < 0.8f) 
+                if (choose_mat < 0.8f)
                 {
                     // diffuse
                     Color albedo = random_color() * random_color();
-                    
+
                     Material* sphere_material = (Material*)malloc(sizeof(Material));
                     sphere_material->type = Material_Type::lambertian;
                     sphere_material->lambertian.color = albedo;
@@ -282,7 +289,7 @@ static void init_random_scene()
 
                     add_sphere_to_world(&global_world, &s);
                 }
-                else if (choose_mat < 0.95f) 
+                else if (choose_mat < 0.95f)
                 {
                     // metal
                     Color albedo = random_color(0.5f, 1.0f);
@@ -297,7 +304,7 @@ static void init_random_scene()
 
                     add_sphere_to_world(&global_world, &s);
                 }
-                else 
+                else
                 {
                     // glass
                     Material* sphere_material = (Material*)malloc(sizeof(Material));
@@ -344,23 +351,38 @@ static void init_random_scene()
     }
 }
 
-static void render_scene(Image& image, const Camera& cam)
-{
-    for (unsigned row_ = 0;
-        row_ < image.m_height;
-        ++row_)
-    {
-        unsigned row = image.m_height - 1 - row_;
 
-        for (unsigned col = 0;
-            col < image.m_width;
-            ++col)
+struct Rectangle
+{
+    unsigned x = 0;
+    unsigned y = 0;
+    unsigned width = 0;
+    unsigned height = 0;
+
+    Rectangle() = default;
+
+    Rectangle(unsigned x, unsigned y, unsigned width, unsigned height) :
+        x(x), y(y), width(width), height(height)
+    {
+    }
+};
+
+static bool render_scene(Image& image, const Camera& cam,
+                         Rectangle target)
+{
+    for (unsigned row = target.y;
+         row < target.y + target.height;
+         ++row)
+    {
+        for (unsigned col = target.x;
+             col < target.x + target.width;
+             ++col)
         {
             Color pixel_color = vec3(0.0f);
 
             for (unsigned s = 0;
-                s < image.m_samples_per_pixel;
-                ++s)
+                 s < image.m_samples_per_pixel;
+                 ++s)
             {
                 float u = ((float)col + random_float()) / ((float)image.m_width - 1.0f);
                 float v = ((float)row + random_float()) / ((float)image.m_height - 1.0f);
@@ -376,7 +398,7 @@ static void render_scene(Image& image, const Camera& cam)
         ++g_scanlines_processed;
     }
 
-    g_done_rendering = true;
+    return true;
 }
 
 int main(void)
@@ -386,15 +408,6 @@ int main(void)
     // Image
 
     Image image(240, 3.0f / 2.0f, 50, 25);
-
-#define GOTTA_GO_SLOW 0
-
-#if GOTTA_GO_SLOW
-    image_width = 1200;
-    image_height = (int)((float)image_width / aspect_ratio);
-    samples_per_pixel = 500;
-    max_depth = 50;
-#endif
 
     // World 
     init_random_scene();
@@ -408,21 +421,60 @@ int main(void)
     float aperture = 0.1f;
 
     Camera cam = camera(
-        lookfrom, 
-        lookat, 
-        vup, 
-        20.0f, 
+        lookfrom,
+        lookat,
+        vup,
+        20.0f,
         image.aspect_ratio(),
-        aperture, 
+        aperture,
         dist_to_focus);
 
 
     g_total_scanlines = image.m_height;
-    
+
+#define render_mode 3
+
+#if render_mode == 1
     // Render
-    
-    std::thread worker(render_scene, std::ref(image), std::ref(cam));
-    
+    Rectangle target1(0, 0, image.m_width, image.m_height);
+    std::future<bool> worker1 = std::async(render_scene, std::ref(image), std::ref(cam), target1);
+    worker1.get();
+
+    cout << "Done!" << endl;
+
+    std::string_view filename("original.ppm");
+    if (!image.save(filename, 0))
+    {
+        cout << "[ERROR] cannot save image '" << filename << "' on disk" << endl;
+    }
+
+#elif render_mode == 2
+    // Render
+    Rectangle target1(0, 0, image.m_width, image.m_height / 2);
+    std::future<bool> worker1 = std::async(render_scene, std::ref(image), std::ref(cam), target1);
+    worker1.get();
+
+    Rectangle target2(0, image.m_height / 2, image.m_width, image.m_height / 2);
+    std::future<bool> worker2 = std::async(render_scene, std::ref(image), std::ref(cam), target2);
+    worker2.get();
+
+    cout << "Done!" << endl;
+
+    std::string_view filename("output.ppm");
+    if (!image.save(filename, 0))
+    {
+        cout << "[ERROR] cannot save image '" << filename << "' on disk" << endl;
+    }
+#elif render_mode == 3
+    // Render
+
+    Rectangle target1(0, 0, image.m_width / 2, image.m_height / 2);
+    //target1 = Rectangle();
+    std::future<bool> worker1 = std::async(render_scene, std::ref(image), std::ref(cam), target1);
+
+    Rectangle target2(0, target1.height + 50, image.m_width, target1.height - 50);
+    target2 = Rectangle();
+    std::future<bool> worker2 = std::async(render_scene, std::ref(image), std::ref(cam), target2);
 
     // Print progress
 
@@ -430,7 +482,9 @@ int main(void)
 
     printf("Begin rendering\n");
 
-    while (!g_done_rendering)
+    std::chrono::seconds span(1);
+    while (worker1.wait_for(span) == std::future_status::timeout ||
+           worker2.wait_for(span) == std::future_status::timeout)
     {
         float perc = (float)g_scanlines_processed / (float)g_total_scanlines * 100.0f;
         auto now = chrono::steady_clock::now();
@@ -439,25 +493,21 @@ int main(void)
 
         long long sec = elapsed_ms / 1000;
 
-        printf("[%5.2f%%] %llds\n", perc, sec);
-
-        std::this_thread::sleep_for(std::chrono::seconds(2));
+        printf("[%5.2f%%] %llds\r", perc, sec);
     }
 
     auto end = chrono::steady_clock::now();
     auto total_time_ms = chrono::duration_cast<chrono::milliseconds>(end - start).count();
 
-    printf("Done! (%lldms)\n", total_time_ms);
+    printf("\nDone! (%lldms)\n", total_time_ms);
 
-    if (worker.joinable())
-        worker.join();
-    
     std::string_view filename("output.ppm");
 
     if (!image.save(filename, total_time_ms))
     {
         cout << "[ERROR] cannot save image '" << filename << "' on disk" << endl;
     }
+#endif 
 
     return 0;
 }

@@ -25,10 +25,10 @@ Camera camera(
     camera.horizontal = focus_distance * viewport_width * camera.u;
     camera.vertical = focus_distance * viewport_height * camera.v;
     camera.lower_left_corner =
-        camera.origin -
+        (camera.origin -
         camera.horizontal / 2.0f -
         camera.vertical / 2.0f -
-        focus_distance * camera.w;
+        focus_distance * camera.w);
     camera.lens_radius = aperture / 2.0f;
 
     return camera;
